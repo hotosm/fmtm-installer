@@ -1,0 +1,28 @@
+repos:
+  # Versioning: Commit messages & changelog
+  - repo: https://github.com/commitizen-tools/commitizen
+    rev: v3.13.0
+    hooks:
+      - id: commitizen
+        stages: [commit-msg]
+
+  # Lint: Bash scripts
+  - repo: https://github.com/openstack-dev/bashate.git
+    rev: 2.1.1
+    hooks:
+      - id: bashate
+        args: ["--ignore=E006"]
+
+  # Lint: Shell scripts
+  - repo: https://github.com/shellcheck-py/shellcheck-py
+    rev: v0.9.0.6
+    hooks:
+      - id: shellcheck
+        args: ["-x", "--exclude=SC1091"]
+
+  # Lint: Markdown
+  - repo: https://github.com/igorshubovych/markdownlint-cli
+    rev: v0.38.0
+    hooks:
+      - id: markdownlint
+        args: [--fix, --ignore, CHANGELOG.md, --ignore, LICENSE.md, --ignore, .github]
