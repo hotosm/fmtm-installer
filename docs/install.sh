@@ -20,7 +20,8 @@ heading_echo() {
     local color="${2:-blue}"
     local separator="--------------------------------------------------------"
     local sep_length=${#separator}
-    local pad_length=$(( (sep_length - ${#message}) / 2 ))
+    local pad_length
+    pad_length=$(( (sep_length - ${#message}) / 2 ))
     local pad=""
 
     case "$color" in
@@ -59,7 +60,7 @@ install_progress() {
     local spin[2]="|"
     local spin[3]="/"
 
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
+    while [ "$(ps a | awk '{print $1}' | grep "$pid")" ]; do
         local temp=${spin[0]}
         spin[0]=${spin[1]}
         spin[1]=${spin[2]}
@@ -72,7 +73,7 @@ install_progress() {
 }
 
 display_logo() {
-    echo 
+    echo
     echo " ███████████ ██████   ██████ ███████████ ██████   ██████"
     echo "░░███░░░░░░█░░██████ ██████ ░█░░░███░░░█░░██████ ██████ "
     echo " ░███   █ ░  ░███░█████░███ ░   ░███  ░  ░███░█████░███ "
@@ -142,13 +143,13 @@ check_user_not_root() {
 
             machinectl --quiet shell \
                 --setenv=RUN_AS_ROOT=true \
-                --setenv=DOCKER_HOST=${DOCKER_HOST} \
+                --setenv=DOCKER_HOST="${DOCKER_HOST}" \
                 svcfmtm@ /bin/bash -c "$user_script_path"
         else
             # User called script remotely, so do the same
             machinectl --quiet shell \
                 --setenv=RUN_AS_ROOT=true \
-                --setenv=DOCKER_HOST=${DOCKER_HOST} \
+                --setenv=DOCKER_HOST="${DOCKER_HOST}" \
                 svcfmtm@ /bin/bash -c "curl -fsSL https://get.fmtm.dev | bash"
         fi
 
@@ -357,7 +358,8 @@ add_vars_to_bashrc() {
     fi
 
     echo "Setting DOCKER_HOST for the current session."
-    export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
+    DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
+    export DOCKER_HOST
 
     echo
     echo "Done"
@@ -414,27 +416,24 @@ install_envsubst_if_missing() {
     else
         echo "Downloading a8m/envsubst"
         echo
-        curl -L https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-`uname -s`-`uname -m` -o envsubst
+        curl -L "https://github.com/a8m/envsubst/releases/download/v1.2.0/envsubst-$(uname -s)-$(uname -m)" -o envsubst
         chmod +x envsubst
     fi
 }
 
 check_existing_dotenv() {
-    if [ -f "${DOTENV_NAME}" ]
-    then
+    if [ -f "${DOTENV_NAME}" ]; then
         echo "WARNING: ${DOTENV_NAME} file already exists."
         echo "This script will overwrite the content of this file."
         echo
-        echo "Do you want to overwrite file '"${DOTENV_NAME}"'? y/n"
+        printf "Do you want to overwrite file \'%s\'? y/n" "${DOTENV_NAME}"
         echo
-        while true
-        do
-            read -e -p "Enter 'y' to overwrite, anything else to continue: " overwrite
+        while true; do
+            read -erp "Enter 'y' to overwrite, anything else to continue: " overwrite
 
-            if [[ "$overwrite" = "y" || "$overwrite" = "yes" ]]
-            then
+            if [[ "$overwrite" = "y" || "$overwrite" = "yes" ]]; then
                 return 1
-            else 
+            else
                 echo "Continuing with existing .env file."
                 return 0
             fi
@@ -449,12 +448,10 @@ check_if_test() {
 
     echo "Is this a test deployment?"
     echo
-    while true
-    do
-        read -e -p "Enter 'y' if yes, anything else to continue: " test
+    while true; do
+        read -erp "Enter 'y' if yes, anything else to continue: " test
 
-        if [[ "$test" = "y" || "$test" = "yes" ]]
-        then
+        if [[ "$test" = "y" || "$test" = "yes" ]]; then
             IS_TEST=true
             export DEBUG="True"
             export LOG_LEVEL="DEBUG"
@@ -484,7 +481,7 @@ get_repo() {
 
     # Files in a random temp dir
     mkdir -p "/tmp/${RANDOM_DIR}"
-    cd "/tmp/${RANDOM_DIR}"
+    cd "/tmp/${RANDOM_DIR}" || exit 1
 
     repo_url="https://github.com/hotosm/fmtm.git"
 
@@ -516,8 +513,7 @@ get_repo() {
 set_deploy_env() {
     heading_echo "Deployment Environment"
 
-    while true
-    do
+    while true; do
         echo "Which environment do you wish to run? (dev/staging/prod)"
         echo
         echo "Both dev & staging include ODK Central and S3 buckets."
@@ -526,7 +522,7 @@ set_deploy_env() {
         echo "- ODK Central"
         echo "- S3 Buckets"
         echo
-        read -e -p "Enter the environment (dev/staging/prod): " environment
+        read -erp "Enter the environment (dev/staging/prod): " environment
 
         case "$environment" in
             dev)
@@ -554,7 +550,7 @@ set_external_odk() {
     heading_echo "External ODK Central Host"
 
     echo "Please enter the ODKCentral URL."
-    read -e -p "ODKCentral URL: " ODK_CENTRAL_URL
+    read -erp "ODKCentral URL: " ODK_CENTRAL_URL
     echo
     export ODK_CENTRAL_URL=${ODK_CENTRAL_URL}
 
@@ -575,7 +571,7 @@ set_odk_user_creds() {
     heading_echo "ODK User Credentials"
 
     echo "Please enter the ODKCentral Email."
-    read -e -p "ODKCentral Email: " ODK_CENTRAL_USER
+    read -erp "ODKCentral Email: " ODK_CENTRAL_USER
     echo
     export ODK_CENTRAL_USER=${ODK_CENTRAL_USER}
 
@@ -584,7 +580,7 @@ set_odk_user_creds() {
     yellow_echo "Note: this must be >10 characters long."
     while true; do
         echo
-        read -e -p "ODKCentral Password: " ODK_CENTRAL_PASSWD
+        read -erp "ODKCentral Password: " ODK_CENTRAL_PASSWD
         echo
 
         # Check the length of the entered password
@@ -602,38 +598,35 @@ check_external_database() {
 
     echo "Do you want to use an external database instead of local?"
     echo
-    while true
-    do
-        read -e -p "Enter y for external, anything else to continue: " externaldb
+    while true; do
+        read -erp "Enter y for external, anything else to continue: " externaldb
 
-        if [ "$externaldb" = "y" ]
-        then
+        if [ "$externaldb" = "y" ]; then
             EXTERNAL_DB="True"
             echo "Using external database."
         fi
         break
     done
 
-    if [ "$EXTERNAL_DB" = "True" ]
-    then
+    if [ "$EXTERNAL_DB" = "True" ]; then
         echo
         echo "Please enter the database host."
-        read -e -p "FMTM DB Host: " FMTM_DB_HOST
+        read -erp "FMTM DB Host: " FMTM_DB_HOST
         echo
         export FMTM_DB_HOST=${FMTM_DB_HOST}
 
         echo "Please enter the database name."
-        read -e -p "FMTM DB Name: " FMTM_DB_NAME
+        read -erp "FMTM DB Name: " FMTM_DB_NAME
         echo
         export FMTM_DB_NAME=${FMTM_DB_NAME}
 
         echo "Please enter the database user."
-        read -e -p "FMTM DB User: " FMTM_DB_USER
+        read -erp "FMTM DB User: " FMTM_DB_USER
         echo
         export FMTM_DB_USER=${FMTM_DB_USER}
 
         echo "Please enter the database password."
-        read -e -p "FMTM DB Password: " FMTM_DB_PASSWORD
+        read -erp "FMTM DB Password: " FMTM_DB_PASSWORD
         echo
         export FMTM_DB_PASSWORD=${FMTM_DB_PASSWORD}
 
@@ -646,17 +639,17 @@ set_external_s3() {
     heading_echo "S3 Credentials"
 
     echo "Please enter the S3 host endpoint."
-    read -e -p "S3 Endpoint: " S3_ENDPOINT
+    read -erp "S3 Endpoint: " S3_ENDPOINT
     echo
     export S3_ENDPOINT=${S3_ENDPOINT}
 
     echo "Please enter the access key."
-    read -e -p "S3 Access Key: " S3_ACCESS_KEY
+    read -erp "S3 Access Key: " S3_ACCESS_KEY
     echo
     export S3_ACCESS_KEY=${S3_ACCESS_KEY}
 
     echo "Please enter the secret key."
-    read -e -p "S3 Secret Key: " S3_SECRET_KEY
+    read -erp "S3 Secret Key: " S3_SECRET_KEY
     echo
     export S3_SECRET_KEY=${S3_SECRET_KEY}
 
@@ -666,7 +659,7 @@ set_external_s3() {
         yellow_echo "The bucket should be public."
         echo
         echo "Please enter the bucket name."
-        read -e -p "S3 Bucket Name: " S3_BUCKET_NAME
+        read -erp "S3 Bucket Name: " S3_BUCKET_NAME
         echo
         export S3_BUCKET_NAME=${S3_BUCKET_NAME}
     fi
@@ -684,12 +677,10 @@ set_domains() {
     heading_echo "FMTM Domain Name"
 
     echo "To run FMTM you must own a domain name."
-    while true
-    do
-        read -e -p "Enter a valid domain name you wish to run FMTM from: " fmtm_domain
+    while true; do
+        read -erp "Enter a valid domain name you wish to run FMTM from: " fmtm_domain
 
-        if [ "$fmtm_domain" = "" ]
-        then
+        if [ "$fmtm_domain" = "" ]; then
             echo "Invalid input!"
         else
             export FMTM_DOMAIN="${fmtm_domain}"
@@ -708,27 +699,24 @@ set_domains() {
     yellow_echo "$fmtm_domain --> $current_ip"
     yellow_echo "api.$fmtm_domain --> $current_ip"
 
-    if [ "$BRANCH_NAME" != "main" ]
-    then
+    if [ "$BRANCH_NAME" != "main" ]; then
         yellow_echo "s3.$fmtm_domain --> $current_ip"
         yellow_echo "odk.$fmtm_domain --> $current_ip"
     fi
 
     echo
-    read -e -p "Once these DNS entries are set and valid, press ENTER to continue." valid
+    read -erp "Once these DNS entries are set and valid, press ENTER to continue."
 
     heading_echo "Certificates"
     echo "FMTM will automatically generate SSL (HTTPS) certificates for your domain name."
     echo
-    while true
-    do
+    while true; do
         echo "Enter an email address you wish to use for certificate generation."
         echo "This will be used by LetsEncrypt, but for no other purpose."
         echo
-        read -e -p "Email: " cert_email
+        read -erp "Email: " cert_email
 
-        if [ "$cert_email" = "" ]
-        then
+        if [ "$cert_email" = "" ]; then
             echo "Invalid input!"
         else
             export CERT_EMAIL="${cert_email}"
@@ -753,9 +741,9 @@ set_osm_credentials() {
 
     echo "Please enter your OSM authentication details"
     echo
-    read -e -p "Client ID: " OSM_CLIENT_ID
+    read -erp "Client ID: " OSM_CLIENT_ID
     echo
-    read -e -p "Client Secret: " OSM_CLIENT_SECRET
+    read -erp "Client Secret: " OSM_CLIENT_SECRET
 
     export OSM_CLIENT_ID=${OSM_CLIENT_ID}
     export OSM_CLIENT_SECRET=${OSM_CLIENT_SECRET}
@@ -767,7 +755,7 @@ check_change_port() {
     heading_echo "Set Default Port"
     echo "The default port for local development is 7050."
     echo
-    read -e -p "Enter a different port if required, or nothing for default: " fmtm_port
+    read -erp "Enter a different port if required, or nothing for default: " fmtm_port
 
     if [ -n "$fmtm_port" ]; then
         echo "Using $fmtm_port"
@@ -849,7 +837,8 @@ prompt_user_gen_dotenv() {
 run_compose_stack() {
     # Workaround if DOCKER_HOST is missed (i.e. docker just installed)
     if [ -z "$DOCKER_HOST" ]; then
-        export DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
+        DOCKER_HOST=unix:///run/user/$(id -u)/docker.sock
+        export DOCKER_HOST
     fi
 
     heading_echo "Pulling Required Images"
@@ -864,7 +853,8 @@ run_compose_stack() {
 
 final_output() {
     # Source env vars
-    . .env
+    # shellcheck source=/dev/null
+    . "${DOTENV_NAME}"
 
     proto="http"
     suffix=""
@@ -914,7 +904,7 @@ install_fmtm() {
     get_repo
     # Work in generated temp dir
     local repo_dir="/tmp/${RANDOM_DIR}/fmtm"
-    cd "${repo_dir}"
+    cd "${repo_dir}" || exit 1
 
     if [ -f "${repo_dir}/${DOTENV_NAME}" ]; then
         heading_echo "Skip Dotenv Generation"
@@ -922,7 +912,7 @@ install_fmtm() {
     else
         prompt_user_gen_dotenv
     fi
-    
+
     run_compose_stack
     final_output
 
@@ -935,7 +925,6 @@ install_fmtm() {
     if [[ "$IS_TEST" != true ]]; then
         rm -rf "/tmp/${RANDOM_DIR:-tmp}"
     fi
-
 }
 
 install_fmtm

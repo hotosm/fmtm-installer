@@ -18,7 +18,7 @@ repos:
     rev: v0.9.0.6
     hooks:
       - id: shellcheck
-        args: ["-x", "--exclude=SC1091"]
+        args: ["-x", "--exclude=SC2317,SC2143"]
 
   # Lint: Markdown
   - repo: https://github.com/igorshubovych/markdownlint-cli
