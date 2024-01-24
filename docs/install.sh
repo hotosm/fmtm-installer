@@ -139,6 +139,7 @@ check_user_not_root() {
             root_script_path="$(readlink -f "$0")"
             user_script_path="/home/svcfmtm/$(basename "$0")"
             cp "$root_script_path" "$user_script_path"
+            chown svcfmtm:svcfmtm "$user_script_path"
             chmod +x "$user_script_path"
 
             machinectl --quiet shell \
