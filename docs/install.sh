@@ -123,6 +123,12 @@ check_user_not_root() {
         yellow_echo "Rerunning this script as user 'svcfmtm'."
         echo
 
+        if ! command -v ps &>/dev/null; then
+            apt-get update > /dev/null
+            apt-get install -y procps --no-install-recommends > /dev/null
+            echo
+        fi
+
         if ! command -v machinectl &>/dev/null; then
             # Start the installation process in the background with spinner
             ( apt-get update > /dev/null
