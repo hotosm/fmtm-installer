@@ -29,6 +29,12 @@
 
 <!-- markdownlint-enable -->
 
+> [!WARNING]
+> For now this repo is unmaintained, and instead might become a paid convenience
+> script for organizational FMTM installation.
+>
+> Feel free to use at your own risk.
+
 ## How To Use
 
 On a Linux-based machine with `bash` installed, run the script:
